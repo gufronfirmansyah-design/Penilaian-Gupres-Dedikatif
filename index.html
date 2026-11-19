@@ -84,8 +84,8 @@
             <div class="bg-white/10 backdrop-blur-xs border border-white/15 rounded-2xl p-4 sm:p-5 space-y-2.5 text-xs text-blue-50/95">
               <h3 class="font-extrabold uppercase tracking-wider text-amber-300">Ketentuan Penilaian</h3>
               <p>• <strong>Isolasi Penilaian:</strong> Setiap juri hanya dapat melihat dan mengisi nilai untuk rumpun tugasnya sendiri (bersifat rahasia antar juri).</p>
-              <p>• <strong>GTK Berprestasi (Guru & Kepsek):</strong> Penilaian meliputi <em>Naskah (30%)</em>, <em>Unjuk Karya (40%)</em>, dan <em>Wawasan Kependidikan (30%)</em>.</p>
-              <p>• <strong>GTK Berdedikasi:</strong> Penilaian meliputi <em>Video Praktik Baik (60%)</em> dan <em>Wawasan Kependidikan (40%)</em>.</p>
+              <p>• <strong>GTK Berprestasi (Guru & Kepsek):</strong> Penilaian meliputi Karya Tulis, Gelar Wicara, dan Wawasan Kependidikan.</p>
+              <p>• <strong>GTK Berdedikasi:</strong> Penilaian meliputi Video dan Wawasan Kependidikan.</p>
               <p>• <strong>Penguncian Pleno:</strong> Nilai dapat diperbarui selama tahap masih dibuka, dan otomatis terkunci saat sidang pleno dimulai.</p>
             </div>
           </div>
@@ -153,13 +153,15 @@
             class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold">
             <option value="ALL">Semua Peserta</option>
             <option value="BELUM">Belum Dinilai</option>
-            <option value="SUDAH">Sudah Dinilai</option>
+            <option value="DRAF">Draf</option>
+            <option value="SUDAH">Semua komponen lengkap</option>
           </select>
         </div>
       </div>
 
       <!-- Daftar Kartu Peserta -->
-      <div id="juri-peserta-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      <nav class="flex gap-2" aria-label="Menu juri"><button id="tab-penilaian" onclick="menuJuri(false)">Penilaian</button><button id="tab-rekap" onclick="menuJuri(true)">Rekap nilai saya</button></nav>
+      <div id="juri-peserta-grid" class="overflow-x-auto bg-white rounded-xl border"></div>
     </section>
 
     <!-- ==================== 3. VIEW ADMIN PANITIA ==================== -->
@@ -173,7 +175,7 @@
           </div>
           <div class="flex gap-2">
             <button onclick="adminRefreshRekap()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl">
-              Sinkronkan Rekap
+              Sinkronkan naskah dan video
             </button>
             <button onclick="exportRekapJuriCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl">
               Ekspor CSV Rekap Nilai
@@ -211,10 +213,21 @@
         </form>
       </div>
 
+      <nav class="flex gap-3"><button onclick="panelAdmin(false)" class="bg-white px-4 py-2 rounded border">Rekap komponen</button><button onclick="panelAdmin(true)" class="bg-white px-4 py-2 rounded border">Pembobotan akhir</button></nav>
+      <section id="panel-pleno" class="hidden bg-white rounded-xl p-5 space-y-4">
+        <button type="button" class="border rounded px-3 py-2" onclick="loadDashboard()">Muat ulang nilai dari spreadsheet</button>
+        <h3 class="font-bold">Bobot akhir per kategori (%)</h3>
+        <p class="text-sm">Isi bobot sebagai angka, misalnya 20 untuk 20%. Jumlah seluruh bobot harus 100.</p>
+        <select id="grup-pleno" onchange="renderPleno()" class="border p-2"><option value="Guru">Guru Berprestasi</option><option value="Kepsek">Kepala Sekolah Berprestasi</option><option value="Dedikasi">Guru Berdedikasi</option></select>
+        <div id="bobot-input" class="flex flex-wrap gap-3"></div><button onclick="simpanPleno(true)" class="bg-blue-700 text-white rounded px-4 py-2">Simpan bobot</button>
+        <h3 class="font-bold">Nilai tambahan per peserta</h3><select id="peserta-pleno" onchange="nilaiTambahan()" class="border p-2"></select>
+        <div id="tambahan-input" class="flex flex-wrap gap-3"></div><button onclick="simpanPleno(false)" class="bg-blue-700 text-white rounded px-4 py-2">Simpan nilai tambahan</button>
+        <div id="hasil-pleno" class="overflow-x-auto"></div>
+      </section>
       <!-- Tabel Rekap Gabungan Juri 1 & Juri 2 -->
-      <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
+      <div id="panel-komponen" class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 class="text-base font-extrabold text-slate-900">Rekapitulasi Nilai Gabungan (Juri 1 & Juri 2)</h3>
+          <h3 class="text-base font-extrabold text-slate-900">Rekap komponen untuk pembobotan admin</h3>
           <div class="flex flex-wrap gap-2">
             <select id="adm-filter-sheet" onchange="renderAdminRekapTable()" class="px-3 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50">
               <option value="">Semua Jenjang / Sheet</option>
@@ -237,13 +250,7 @@
               <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
                 <th class="p-3">ID / Nama Peserta</th>
                 <th class="p-3">Kategori / Jenjang</th>
-                <th class="p-3 text-center">Juri 1 (Total)</th>
-                <th class="p-3 text-center">Juri 2 (Total)</th>
-                <th class="p-3 text-center">Rata Naskah/Video</th>
-                <th class="p-3 text-center">Rata Unjuk Karya</th>
-                <th class="p-3 text-center">Rata Wawasan</th>
-                <th class="p-3 text-center font-extrabold bg-blue-50 text-blue-900">Nilai Akhir</th>
-                <th class="p-3 text-center">Status</th>
+                <th>Komponen</th><th>Juri 1</th><th>Juri 2</th><th>Rata-rata</th>
               </tr>
             </thead>
             <tbody id="adm-rekap-tbody" class="divide-y divide-slate-100"></tbody>
@@ -273,51 +280,10 @@
       <form id="form-rubrik-juri" onsubmit="handleSaveRubrikScore(event)" class="flex-1 overflow-y-auto p-6 space-y-6 text-xs">
         <input type="hidden" id="mdl-inp-id-peserta" />
 
-        <!-- BAGIAN 1: TAHAP PRA-KEGIATAN (NASKAH BEST PRACTICE / VIDEO PRAKTIK BAIK) -->
-        <div id="sec-tahap-1" class="rounded-2xl border border-slate-200 p-5 space-y-4 bg-slate-50/40">
-          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
-            <div>
-              <h4 id="t1-heading" class="text-sm font-extrabold text-slate-900">1. Penilaian Naskah Best Practice (Bobot 30%)</h4>
-              <p id="t1-subheading" class="text-[11px] text-slate-500">Dapat dinilai lebih awal sebelum kegiatan. Rentang tiap indikator: 0 s.d. 25 poin.</p>
-            </div>
-            <div class="px-3 py-1.5 rounded-xl bg-blue-100 text-blue-900 font-extrabold">
-              Skor Komponen: <span id="live-skor-t1">0</span> / 100
-            </div>
-          </div>
-
-          <div id="t1-indicators-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
-        </div>
-
-        <!-- BAGIAN 2A: UNJUK KARYA / GELAR WICARA (KHUSUS GTK PRESTASI) -->
-        <div id="sec-unjuk-karya" class="rounded-2xl border border-slate-200 p-5 space-y-4 bg-slate-50/40">
-          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
-            <div>
-              <h4 class="text-sm font-extrabold text-slate-900">2. Penilaian Unjuk Karya / Gelar Wicara & Tanya Jawab (Bobot 40%)</h4>
-              <p class="text-[11px] text-slate-500">Dinilai saat gelar wicara & tanya jawab berlangsung. Rentang tiap indikator: 0 s.d. 25 poin.</p>
-            </div>
-            <div class="px-3 py-1.5 rounded-xl bg-indigo-100 text-indigo-900 font-extrabold">
-              Skor Komponen: <span id="live-skor-uk">0</span> / 100
-            </div>
-          </div>
-
-          <div id="uk-indicators-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
-        </div>
-
-        <!-- BAGIAN 2B: WAWASAN KEPENDIDIKAN / TES LISAN -->
-        <div id="sec-wawasan" class="rounded-2xl border border-slate-200 p-5 space-y-4 bg-slate-50/40">
-          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
-            <div>
-              <h4 id="wk-heading" class="text-sm font-extrabold text-slate-900">3. Penilaian Wawasan Kependidikan / Tes Lisan (Bobot 30%)</h4>
-              <p class="text-[11px] text-slate-500">Dinilai pada sesi tes lisan wawasan kependidikan. Rentang tiap indikator: 0 s.d. 25 poin.</p>
-            </div>
-            <div class="px-3 py-1.5 rounded-xl bg-teal-100 text-teal-900 font-extrabold">
-              Skor Komponen: <span id="live-skor-wk">0</span> / 100
-            </div>
-          </div>
-
-          <div id="wk-indicators-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
-        </div>
-
+        <div id="bahan-modal"></div>
+        <label class="block font-bold">Komponen penilaian<select id="pilih-komponen" class="block border rounded-lg p-2 mt-1" onchange="gantiKomponen()"></select></label>
+        <div id="indikator-juri" class="grid gap-3 sm:grid-cols-2"></div>
+        <p class="font-bold">Nilai komponen <output id="skor-komponen"></output></p>
         <!-- Catatan Juri & Ringkasan Total -->
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-blue-50/70 border border-blue-200 rounded-2xl p-4">
           <div class="sm:col-span-8">
@@ -325,10 +291,7 @@
             <input type="text" id="mdl-catatan" placeholder="Tuliskan catatan singkat hasil penilaian..."
               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs" />
           </div>
-          <div class="sm:col-span-4 text-right">
-            <span class="text-[11px] font-bold text-slate-500 uppercase block">Total Nilai Akhir Juri</span>
-            <span id="live-nilai-akhir" class="text-3xl font-extrabold text-blue-700">0.00</span>
-          </div>
+          
         </div>
 
         <div class="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
@@ -336,7 +299,7 @@
             Tutup
           </button>
           <button type="submit" id="btn-simpan-nilai" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20">
-            Simpan Nilai Penilaian
+            Simpan penilaian
           </button>
         </div>
       </form>
@@ -344,6 +307,6 @@
   </div>
 
   <script src="./config.js"></script>
-  <script src="./app.js"></script>
+  <script src="./app.js?v=rubrik2026"></script>
 </body>
 </html>

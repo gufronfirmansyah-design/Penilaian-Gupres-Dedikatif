@@ -4,47 +4,21 @@
     // =========================================================================
     const GAS_JURI_API_URL = window.JURI_WEB_CONFIG.apiUrl;
 
-    const INDIKATOR_RUBRIK = {
-      PRESTASI: {
-        t1_title: "1. Penilaian Naskah Best Practice (Bobot 30%)",
-        t1_items: [
-          "Orisinalitas, Kebaruan, dan Inovasi Gagasan (Maks 25)",
-          "Sistematika Penulisan, Kejelasan Masalah & Solusi (Maks 25)",
-          "Dampak Nyata & Keberlanjutan Praktik Baik (Maks 25)",
-          "Kelengkapan Data, Bukti Pendukung & Referensi (Maks 25)"
-        ],
-        uk_items: [
-          "Penguasaan Materi & Kedalaman Pemahaman Karya (Maks 25)",
-          "Kualitas Penyajian, Media & Kejelasan Komunikasi (Maks 25)",
-          "Kemampuan Argumentasi & Ketepatan Menjawab Tanya Jawab (Maks 25)",
-          "Inspirasi & Potensi Replikasi bagi GTK Lain (Maks 25)"
-        ],
-        wk_title: "3. Penilaian Wawasan Kependidikan / Tes Lisan (Bobot 30%)",
-        wk_items: [
-          "Pemahaman Kebijakan Pendidikan Nasional & Kurikulum (Maks 25)",
-          "Wawasan Kepemimpinan Pembelajaran & Transformasi Sekolah (Maks 25)",
-          "Etika Profesi, Karakter, & Kode Etik Guru/PGRI (Maks 25)",
-          "Kemampuan Analisis Masalah & Solusi Pendidikan Daerah (Maks 25)"
-        ]
-      },
-      DEDIKATIF: {
-        t1_title: "1. Penilaian Video Praktik Baik / Karya Dedikatif (Bobot 60%)",
-        t1_items: [
-          "Keaslian Situasi, Tantangan Lapangan & Pengabdian Nyata (Maks 25)",
-          "Kreativitas & Strategi Pemecahan Masalah Pembelajaran (Maks 25)",
-          "Dampak Positif bagi Murid, Sekolah & Masyarakat (Maks 25)",
-          "Kualitas Alur Cerita, Visual, Audio & Kejelasan Pesan Video (Maks 25)"
-        ],
-        wk_title: "2. Penilaian Wawasan Kependidikan / Tes Lisan (Bobot 40%)",
-        wk_items: [
-          "Komitmen Pengabdian, Ketangguhan & Integritas Profesi (Maks 25)",
-          "Pemahaman Kebijakan Pendidikan & Layanan Inklusif (Maks 25)",
-          "Kolaborasi dengan Komunitas, Orang Tua & Pemangku Kepentingan (Maks 25)",
-          "Refleksi Diri & Rencana Pengembangan Berkelanjutan (Maks 25)"
-        ]
-      }
-    };
-
+    const komponenNama = {karya:'Karya Tulis',video:'Video',gelar:'Gelar Wicara',wawasan:'Wawasan Kependidikan'};
+    let lihatRekap = false;
+    function kelompok(p) { return p.target_sheet === 'NILAI_GURU_DEDIKATIF' ? ['video','wawasan'] : ['karya','gelar','wawasan']; }
+    function esc(value) {
+      return String(value ?? '').replace(/[&<>"']/g,c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+    }
+    function bahan(p) {
+      if (!p.bahan || !/^https?:\/\//i.test(p.bahan.url)) return 'Belum tersedia';
+      return '<a class="text-blue-700 underline" target="_blank" rel="noopener noreferrer" href="'+esc(p.bahan.url)+'">'+esc(p.bahan.judul || 'Buka karya')+' ↗</a>';
+    }
+    function hasil(key, values) {
+      if (!values || values.some(v=>v===null)) return null;
+      return Number((values.reduce((n,v,i)=>n+v*STATE.data.rubrik[key][i][1],0)/100).toFixed(2));
+    }
+    function menuJuri(rekap) { lihatRekap=rekap; renderJuriPesertaList(); }
     let STATE = {
       token: sessionStorage.getItem('gtk_juri_token') || '',
       data: null,
@@ -237,157 +211,68 @@
         if (p.target_sheet !== activeSheet) return false;
         const matchSearch = !q || p.id_peserta.toLowerCase().includes(q) || p.no_kta.toLowerCase().includes(q) || p.nama.toLowerCase().includes(q);
         if (!matchSearch) return false;
-        const hasScore = !!myScores[p.id_peserta];
+        const record = myScores[p.id_peserta];
+        const hasScore = kelompok(p).every(k => hasil(k,record?.indikator[k]) !== null);
+        if (filterDone==='DRAF' && (!record || hasScore)) return false;
         if (filterDone === 'SUDAH' && !hasScore) return false;
-        if (filterDone === 'BELUM' && hasScore) return false;
+        if (filterDone === 'BELUM' && record) return false;
         return true;
       });
 
       const grid = document.getElementById('juri-peserta-grid');
-      if (filtered.length === 0) {
-        grid.innerHTML = `<div class="md:col-span-2 bg-white p-10 rounded-2xl border border-slate-200 text-center text-xs text-slate-400">Tidak ada data peserta pada pilihan jenjang / pencarian ini.</div>`;
-        return;
+      for (const [id,active] of [['tab-penilaian',!lihatRekap],['tab-rekap',lihatRekap]]) {
+        const btn=document.getElementById(id);
+        btn.className='px-4 py-2 rounded-lg font-bold '+(active?'bg-blue-700 text-white':'bg-white text-blue-700');
+        btn.setAttribute('aria-pressed',String(active));
       }
-
-      grid.innerHTML = filtered.map(p => {
-        const sc = myScores[p.id_peserta];
-        const isDedikatif = p.target_sheet === 'NILAI_GURU_DEDIKATIF';
-        return `
-          <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:border-blue-400 transition flex flex-col justify-between gap-4">
-            <div class="space-y-2">
-              <div class="flex items-center justify-between gap-2">
-                <span class="px-2.5 py-0.5 rounded-lg bg-slate-900 text-white text-[11px] font-extrabold">${p.id_peserta}</span>
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${sc ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                  ${sc ? 'Sudah Dinilai (' + sc.nilai_akhir + ')' : 'Belum Dinilai'}
-                </span>
-              </div>
-              <div>
-                <h3 class="text-base font-extrabold text-slate-900">${p.nama}</h3>
-                <p class="text-xs text-slate-500">KTA: ${p.no_kta} • ${p.asal_sekolah} (${p.utusan_cabang})</p>
-                <p class="text-[11px] font-semibold text-blue-700 mt-0.5">${p.kategori} • ${p.jenjang}</p>
-              </div>
-            </div>
-
-            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-              <div class="text-[11px] text-slate-600">
-                ${sc
-                  ? (isDedikatif
-                      ? `Video: <strong>${sc.skor_t1}</strong> | Wawasan: <strong>${sc.skor_wk}</strong>`
-                      : `Naskah: <strong>${sc.skor_t1}</strong> | Karya: <strong>${sc.skor_uk}</strong> | Wawasan: <strong>${sc.skor_wk}</strong>`)
-                  : 'Klik tombol di kanan untuk mulai menilai'}
-              </div>
-              <button onclick="openModalRubrik('${p.id_peserta}')"
-                class="px-4 py-2 rounded-xl text-xs font-bold transition ${
-                  locked
-                    ? 'bg-slate-200 text-slate-700'
-                    : (sc ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs')
-                }">
-                ${locked ? 'Lihat Nilai' : (sc ? 'Edit Nilai' : 'Input Nilai')}
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('');
+      const keys=kelompok({target_sheet:activeSheet});
+      const headers=['Peserta','Sekolah',...(lihatRekap ? keys.map(k=>komponenNama[k]) : ['Naskah / Video','Progres','Penilaian'])];
+      const rows=filtered.map((p,i)=>{
+        const sc=myScores[p.id_peserta]?.indikator || {};
+        const scores=keys.map(k=>hasil(k,sc[k]));
+        const cols=[esc(p.nama),esc(p.asal_sekolah),...(lihatRekap ? scores.map(v=>v ?? '—') :
+          [bahan(p),scores.filter(v=>v!==null).length+' / '+keys.length+' komponen lengkap','<button class="text-blue-700 underline" data-row="'+i+'">Buka rubrik</button>'])];
+        return '<tr>'+cols.map(v=>'<td class="p-3 border-t">'+v+'</td>').join('')+'</tr>';
+      });
+      grid.innerHTML='<table class="w-full text-left text-sm"><thead><tr>'+headers.map(x=>'<th class="p-3 bg-slate-50">'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table>'+(rows.length?'':'<p class="p-4">Tidak ada peserta sesuai filter.</p>');
+      grid.querySelectorAll('[data-row]').forEach(btn=>btn.onclick=()=>openModalRubrik(filtered[Number(btn.dataset.row)]));
     }
 
-    function openModalRubrik(idPeserta) {
-      const { peserta, myScores, controls } = STATE.data;
-      const p = peserta.find(x => x.id_peserta === idPeserta);
-      if (!p) return;
-      STATE.activePeserta = p;
-
-      const isDedikatif = p.target_sheet === 'NILAI_GURU_DEDIKATIF';
-      const sc = myScores[p.id_peserta] || {
-        t1_ind: [0, 0, 0, 0],
-        uk_ind: [0, 0, 0, 0],
-        wk_ind: [0, 0, 0, 0],
-        catatan: ''
-      };
-
-      const t1Open = controls.TAHAP_1_NASKAH_VIDEO === 'BUKA';
-      const t2Open = controls.TAHAP_2_UNJUK_WAWASAN === 'BUKA';
-      const locked = controls.KUNCI_PLENO === 'YA';
-
-      document.getElementById('mdl-inp-id-peserta').value = p.id_peserta;
-      document.getElementById('mdl-id-peserta').textContent = p.id_peserta;
-      document.getElementById('mdl-nama-peserta').textContent = p.nama;
-      document.getElementById('mdl-sub-peserta').textContent = `${p.kategori} • ${p.jenjang} • ${p.asal_sekolah} (KTA: ${p.no_kta})`;
-      document.getElementById('mdl-catatan').value = sc.catatan || '';
-      document.getElementById('mdl-catatan').disabled = locked;
-
-      const cfg = isDedikatif ? INDIKATOR_RUBRIK.DEDIKATIF : INDIKATOR_RUBRIK.PRESTASI;
-      document.getElementById('t1-heading').textContent = cfg.t1_title;
-      document.getElementById('wk-heading').textContent = cfg.wk_title;
-      document.getElementById('sec-unjuk-karya').classList.toggle('hidden', isDedikatif);
-
-      const renderInputs = (containerId, labels, values, prefix, isDisabled) => {
-        document.getElementById(containerId).innerHTML = labels.map((lbl, idx) => `
-          <div class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
-            <label class="block text-[11px] font-bold text-slate-700 leading-snug">${idx + 1}. ${lbl}</label>
-            <input type="number" step="0.5" min="0" max="25" required
-              id="${prefix}-${idx}" value="${values[idx] || 0}"
-              ${isDisabled ? 'disabled' : ''}
-              oninput="recalcLiveScore()"
-              class="w-full px-3 py-2 rounded-lg border border-slate-300 font-extrabold text-sm text-blue-700 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-600 outline-none disabled:opacity-60" />
-          </div>
-        `).join('');
-      };
-
-      renderInputs('t1-indicators-grid', cfg.t1_items, sc.t1_ind, 'inp-t1', locked || !t1Open);
-      if (!isDedikatif) {
-        renderInputs('uk-indicators-grid', cfg.uk_items, sc.uk_ind, 'inp-uk', locked || !t2Open);
-      }
-      renderInputs('wk-indicators-grid', cfg.wk_items, sc.wk_ind, 'inp-wk', locked || !t2Open);
-
-      document.getElementById('btn-simpan-nilai').classList.toggle('hidden', locked || (!t1Open && !t2Open));
-
-      recalcLiveScore();
+    function openModalRubrik(p) {
+      STATE.activePeserta=p;
+      const sc=STATE.data.myScores[p.id_peserta] || {};
+      STATE.diubah=new Set();
+      STATE.draf=JSON.parse(JSON.stringify(sc.indikator || {}));
+      document.getElementById('mdl-id-peserta').textContent=p.id_peserta;
+      document.getElementById('mdl-nama-peserta').textContent=p.nama;
+      document.getElementById('mdl-sub-peserta').textContent=[p.kategori,p.jenjang,p.asal_sekolah].join(' · ');
+      document.getElementById('mdl-catatan').value=sc.catatan || '';
+      document.getElementById('bahan-modal').innerHTML=bahan(p);
+      document.getElementById('pilih-komponen').innerHTML=kelompok(p).map(k=>'<option value="'+k+'">'+komponenNama[k]+'</option>').join('');
+      gantiKomponen();
       document.getElementById('modal-rubrik').classList.remove('hidden');
     }
-
-    function recalcLiveScore() {
-      if (!STATE.activePeserta) return;
-      const isDedikatif = STATE.activePeserta.target_sheet === 'NILAI_GURU_DEDIKATIF';
-
-      const readGroup = (prefix) => {
-        let sum = 0;
-        for (let i = 0; i < 4; i++) {
-          const el = document.getElementById(`${prefix}-${i}`);
-          if (el) sum += Math.min(25, Math.max(0, Number(el.value || 0)));
-        }
-        return Number(sum.toFixed(2));
-      };
-
-      const sT1 = readGroup('inp-t1');
-      const sUK = isDedikatif ? 0 : readGroup('inp-uk');
-      const sWK = readGroup('inp-wk');
-
-      document.getElementById('live-skor-t1').textContent = sT1;
-      if (!isDedikatif) document.getElementById('live-skor-uk').textContent = sUK;
-      document.getElementById('live-skor-wk').textContent = sWK;
-
-      const total = isDedikatif
-        ? ((sT1 * 0.60) + (sWK * 0.40)).toFixed(2)
-        : ((sT1 * 0.30) + (sUK * 0.40) + (sWK * 0.30)).toFixed(2);
-
-      document.getElementById('live-nilai-akhir').textContent = total;
+    function terbuka(k) {
+      const c=STATE.data.controls;
+      return c.KUNCI_PLENO!=='YA' && c[['karya','video'].includes(k)?'TAHAP_1_NASKAH_VIDEO':'TAHAP_2_UNJUK_WAWASAN']==='BUKA';
     }
-
+    function gantiKomponen() {
+      const key=document.getElementById('pilih-komponen').value;
+      const values=STATE.draf[key] || STATE.data.rubrik[key].map(()=>null);
+      const grid=document.getElementById('indikator-juri');
+      grid.innerHTML=STATE.data.rubrik[key].map(([label,persen],i)=>
+        '<label class="block border rounded-lg p-3">'+esc(label)+' ('+persen+'%)<input class="block border rounded p-2 w-full mt-2" type="number" min="0" max="100" step="any" placeholder="0–100" value="'+(values[i]??'')+'" '+(terbuka(key)?'':'disabled')+'></label>').join('');
+      const update=()=>{document.getElementById('skor-komponen').textContent=hasil(key,values) ?? '— (belum lengkap)';};
+      grid.querySelectorAll('input').forEach((el,i)=>el.oninput=()=>{values[i]=el.value===''?null:el.valueAsNumber; STATE.draf[key]=values;STATE.diubah.add(key);update();});
+      document.getElementById('mdl-catatan').disabled=!kelompok(STATE.activePeserta).some(terbuka);
+      document.getElementById('btn-simpan-nilai').disabled=document.getElementById('mdl-catatan').disabled;
+      update();
+    }
     async function handleSaveRubrikScore(e) {
       e.preventDefault();
-      if (!STATE.activePeserta) return;
-      const isDedikatif = STATE.activePeserta.target_sheet === 'NILAI_GURU_DEDIKATIF';
-
-      const collect = (prefix) => [0, 1, 2, 3].map(i => Number(document.getElementById(`${prefix}-${i}`).value || 0));
-
-      const payload = {
-        id_peserta: document.getElementById('mdl-inp-id-peserta').value,
-        t1_ind: collect('inp-t1'),
-        uk_ind: isDedikatif ? [0, 0, 0, 0] : collect('inp-uk'),
-        wk_ind: collect('inp-wk'),
-        catatan: document.getElementById('mdl-catatan').value
-      };
-
+      const indikator=Object.fromEntries(Object.entries(STATE.draf).filter(([key])=>terbuka(key) && STATE.diubah.has(key)));
+      if (!Object.keys(indikator).length && document.getElementById('mdl-catatan').value===(STATE.data.myScores[STATE.activePeserta.id_peserta]?.catatan || '')) return showToast('Belum ada perubahan nilai atau catatan.','info');
+      const payload={id_peserta:STATE.activePeserta.id_peserta,indikator,catatan:document.getElementById('mdl-catatan').value};
       setLoading(true, 'Menyimpan nilai ke database...');
       try {
         const res = await callJuriApi('saveJuriScore', payload);
@@ -404,6 +289,7 @@
 
     // ==================== DASHBOARD ADMIN ====================
     function renderAdminDashboard() {
+      renderPleno();
       const { controls } = STATE.data;
       document.getElementById('ctrl-tahap-1').value = controls.TAHAP_1_NASKAH_VIDEO || 'BUKA';
       document.getElementById('ctrl-tahap-2').value = controls.TAHAP_2_UNJUK_WAWASAN || 'BUKA';
@@ -416,34 +302,12 @@
       const q = document.getElementById('adm-search-peserta').value.toLowerCase().trim();
 
       const list = STATE.data.rekap.filter(r => {
-        if (shFilter && r.sheet_sumber !== shFilter) return false;
+        if (shFilter && r.target_sheet !== shFilter) return false;
         if (q && !String(r.id_peserta).toLowerCase().includes(q) && !String(r.nama).toLowerCase().includes(q) && !String(r.no_kta).toLowerCase().includes(q)) return false;
         return true;
       });
 
-      document.getElementById('adm-rekap-tbody').innerHTML = list.map(r => `
-        <tr class="hover:bg-slate-50">
-          <td class="p-3">
-            <div class="font-extrabold text-slate-900"><span class="text-blue-600">${r.id_peserta}</span> — ${r.nama}</div>
-            <div class="text-[11px] text-slate-500">KTA: ${r.no_kta} | ${r.asal_sekolah} (${r.utusan_cabang})</div>
-          </td>
-          <td class="p-3">
-            <div class="font-bold text-slate-800">${r.kategori}</div>
-            <div class="text-[11px] text-slate-500">${r.jenjang}</div>
-          </td>
-          <td class="p-3 text-center font-bold">${r.j1_total}</td>
-          <td class="p-3 text-center font-bold">${r.j2_total}</td>
-          <td class="p-3 text-center">${r.rata_t1}</td>
-          <td class="p-3 text-center">${r.rata_uk}</td>
-          <td class="p-3 text-center">${r.rata_wk}</td>
-          <td class="p-3 text-center font-extrabold text-blue-700 bg-blue-50/50 text-sm">${r.nilai_akhir}</td>
-          <td class="p-3 text-center">
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
-              r.status.includes('Lengkap') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-            }">${r.status}</span>
-          </td>
-        </tr>
-      `).join('');
+      document.getElementById('adm-rekap-tbody').innerHTML=list.flatMap(r=>Object.entries(r.nilai).map(([key,vals])=>'<tr>'+[r.nama,r.kategori+' · '+r.jenjang,komponenNama[key],...vals].map(v=>'<td class="p-3 border-t">'+esc(v??'—')+'</td>').join('')+'</tr>')).join('');
     }
 
     async function handleSaveStageControls(e) {
@@ -467,7 +331,7 @@
     }
 
     async function adminRefreshRekap() {
-      setLoading(true, 'Menyinkronkan seluruh sheet nilai...');
+      setLoading(true, 'Mengambil tautan naskah dan video...');
       try {
         const res = await callJuriApi('adminRefreshAllRekap');
         setLoading(false);
@@ -482,22 +346,13 @@
 
     function exportRekapJuriCSV() {
       if (!STATE.data || !STATE.data.rekap) return;
-      const headers = [
-        'ID_Peserta', 'No_KTA_PGRI', 'Nama', 'Asal_Sekolah', 'Utusan_Cabang', 'Kategori', 'Jenjang', 'Sheet_Sumber',
-        'J1_Tahap1', 'J1_UnjukKarya', 'J1_Wawasan', 'J1_Total',
-        'J2_Tahap1', 'J2_UnjukKarya', 'J2_Wawasan', 'J2_Total',
-        'Rata_Tahap1', 'Rata_UnjukKarya', 'Rata_Wawasan', 'Nilai_Akhir_Gabungan', 'Status_Penilaian'
-      ];
-      const csvLines = [headers.join(',')];
-      STATE.data.rekap.forEach(r => {
-        const vals = [
-          r.id_peserta, r.no_kta, r.nama, r.asal_sekolah, r.utusan_cabang, r.kategori, r.jenjang, r.sheet_sumber,
-          r.j1_t1, r.j1_uk, r.j1_wk, r.j1_total,
-          r.j2_t1, r.j2_uk, r.j2_wk, r.j2_total,
-          r.rata_t1, r.rata_uk, r.rata_wk, r.nilai_akhir, r.status
-        ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`);
-        csvLines.push(vals.join(','));
-      });
+      const headers=['ID Peserta','KTA','Nama','Kategori','Jenjang','Komponen','Juri 1','Juri 2','Rata-rata','Tes tertulis','Portofolio','Kepribadian','Nilai akhir pleno'];
+      const csvLines=[headers.join(',')];
+      for (const r of STATE.data.rekap) {
+        for (const [key,vals] of Object.entries(r.nilai)) {
+          csvLines.push([r.id_peserta,r.no_kta,r.nama,r.kategori,r.jenjang,komponenNama[key],...vals,...(STATE.data.pleno.tambahan[r.id_peserta]||[null,null,null]),r.akhir].map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(','));
+        }
+      }
       const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -506,3 +361,36 @@
       a.click();
     }
 
+
+    const labelPleno=['Karya Tulis / Video','Gelar Wicara','Wawasan','Tes Tertulis','Portofolio','Kepribadian'];
+    function panelAdmin(pleno) {
+      document.getElementById('panel-pleno').classList.toggle('hidden',!pleno);
+      document.getElementById('panel-komponen').classList.toggle('hidden',pleno);
+    }
+    function inputPleno(labels,values) {
+      return labels.map((l,i)=>'<label class="text-xs">'+l+'<input class="block border rounded p-2 w-24" type="number" step="any" min="0" max="100" value="'+esc(values?.[i]??'')+'"></label>').join('');
+    }
+    function renderPleno() {
+      const grup=document.getElementById('grup-pleno').value;
+      const list=STATE.data.rekap.filter(r=>(r.nilai.video?'Dedikasi':/kepsek|kepala sekolah/i.test(r.kategori)?'Kepsek':'Guru')===grup);
+      document.getElementById('bobot-input').innerHTML=inputPleno(labelPleno,STATE.data.pleno.bobot[grup]);
+      const sel=document.getElementById('peserta-pleno'),previous=sel.value;
+      sel.innerHTML=list.map(p=>'<option value="'+esc(p.id_peserta)+'">'+esc(p.nama)+' · '+esc(p.jenjang)+'</option>').join('');
+      if(list.some(p=>p.id_peserta===previous)) sel.value=previous;
+      nilaiTambahan();
+      document.getElementById('hasil-pleno').innerHTML='<table class="w-full text-left"><thead><tr><th>Peserta</th><th>Jenjang</th><th>Nilai akhir</th></tr></thead><tbody>'+list.map(r=>'<tr><td>'+esc(r.nama)+'</td><td>'+esc(r.jenjang)+'</td><td>'+(r.akhir??'Belum lengkap')+'</td></tr>').join('')+'</tbody></table>';
+    }
+    function nilaiTambahan() {
+      const id=document.getElementById('peserta-pleno').value;
+      document.getElementById('tambahan-input').innerHTML=inputPleno(labelPleno.slice(3),STATE.data.pleno.tambahan[id]);
+    }
+    async function simpanPleno(bobot) {
+      const id=document.getElementById(bobot?'grup-pleno':'peserta-pleno').value;
+      const nilai=Array.from(document.querySelectorAll((bobot?'#bobot-input':'#tambahan-input')+' input'),el=>el.value===''?null:el.valueAsNumber);
+      try {
+        const res=await callJuriApi('adminSimpanPleno',{jenis:bobot?'bobot':'tambahan',id,nilai});
+        if (!res.success) throw new Error(res.message);
+        await loadDashboard();
+        showToast(res.message,'success');
+      } catch(e) {showToast(e.message,'error');}
+    }
