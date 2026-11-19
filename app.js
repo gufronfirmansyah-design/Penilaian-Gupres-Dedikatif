@@ -256,12 +256,47 @@
       const c=STATE.data.controls;
       return c.KUNCI_PLENO!=='YA' && c[['karya','video'].includes(k)?'TAHAP_1_NASKAH_VIDEO':'TAHAP_2_UNJUK_WAWASAN']==='BUKA';
     }
+    const keteranganAspek = {
+      karya: {
+        'Judul': 'Judul mencerminkan pemikiran inovatif terkait dengan pengelolaan pembelajaran/pengelolaan sekolah/pembinaan sekolah di satuan pendidikan.',
+        'Tujuan': 'Tujuan memuat perubahan yang ingin ditingkatkan pada pengelolaan pembelajaran/pengelolaan sekolah/pembinaan sekolah.',
+        'Permasalahan': 'Masalah dijelaskan berdasarkan kondisi nyata, didukung bukti, dan disertai alasan perlunya diselesaikan.',
+        'Tindakan': 'Langkah penyelesaian masalah dijelaskan secara runtut, sesuai kebutuhan, dan didukung bukti pelaksanaan.',
+        'Hasil & Simpulan': 'Hasil menunjukkan perubahan yang didukung bukti. Simpulan sesuai dengan hasil serta memuat rencana tindak lanjut.',
+        'Layout Tulisan': 'Layout, sistematika dan teknik penulisan sesuai kaidah karya ilmiah.',
+        'Orisinalitas': 'Karya menunjukkan kontribusi nyata peserta. Penggunaan atau adaptasi karya orang lain mencantumkan sumber dengan jelas.'
+      },
+      gelar: {
+        'Tampilan PPT': 'PPT mudah dibaca, tersusun sesuai alur praktik baik, serta memuat gambar atau data yang mendukung penjelasan.',
+        'Penguasaan Materi': 'Peserta menjelaskan masalah, tujuan, tindakan, dan hasil praktik baik secara runtut, tepat, serta sesuai dengan naskah dan bukti pelaksanaan.',
+        'Respon Pertanyaan': 'Kemampuan menjawab saat wawancara tuntas, jelas, argumentatif.'
+      },
+      video: {
+        'Dedikasi dan Keteladanan': 'Video menunjukkan komitmen, konsistensi pengabdian, dan perilaku peserta yang menjadi teladan bagi peserta didik maupun lingkungan sekitarnya.',
+        'Tantangan dan Upaya Pengabdian': 'Video menjelaskan tantangan nyata yang dihadapi serta usaha, kegigihan, dan penyesuaian yang dilakukan peserta dalam menjalankan pengabdian.',
+        'Dampak dan Kebermanfaatan': 'Video menunjukkan manfaat nyata bagi peserta didik, sekolah, atau masyarakat, didukung bukti kegiatan, perubahan, atau kesaksian yang relevan.',
+        'Kejelasan Penyajian Video': 'Alur cerita mudah dipahami, gambar dan suara cukup jelas, serta dokumentasi mendukung cerita pengabdian dan memperlihatkan peran nyata peserta.'
+      },
+      wawasan: {
+        'Pemahaman dan Analisis Masalah': 'Peserta mengenali inti masalah, menjelaskan penyebabnya, serta mempertimbangkan kondisi dan pihak yang terlibat dalam kasus.',
+        'Kreativitas Solusi': 'Peserta menawarkan solusi yang sesuai dengan masalah, mempertimbangkan gagasan atau penyesuaian baru, serta menjelaskan langkah penerapan yang realistis.',
+        'Argumentasi dan Komunikasi': 'Peserta menjelaskan alasan pemilihan solusi secara logis, sesuai prinsip pendidikan, serta menyampaikannya dengan runtut dan mudah dipahami.'
+      }
+    };
     function gantiKomponen() {
       const key=document.getElementById('pilih-komponen').value;
       const values=STATE.draf[key] || STATE.data.rubrik[key].map(()=>null);
       const grid=document.getElementById('indikator-juri');
-      grid.innerHTML=STATE.data.rubrik[key].map(([label,persen],i)=>
-        '<label class="block border rounded-lg p-3">'+esc(label)+' ('+persen+'%)<input class="block border rounded p-2 w-full mt-2" type="number" min="0" max="100" step="any" placeholder="0–100" value="'+(values[i]??'')+'" '+(terbuka(key)?'':'disabled')+'></label>').join('');
+      const urutan = kelompok(STATE.activePeserta);
+      const awal = urutan.slice(0,urutan.indexOf(key)).reduce((n,k)=>n+STATE.data.rubrik[k].length,1);
+      grid.innerHTML=STATE.data.rubrik[key].map(([label,persen],i)=>{
+        const id = 'nilai-'+key+'-'+i;
+        return `<div class="border rounded-lg p-3">
+          <label for="${id}" class="block font-bold">${awal+i}. ${esc(label)} (${persen}%)</label>
+          <p id="${id}-ket" class="mt-1 text-sm leading-relaxed text-slate-600">${esc(keteranganAspek[key][label])}</p>
+          <input id="${id}" aria-describedby="${id}-ket" class="block border rounded p-2 w-full mt-2" type="number" min="0" max="100" step="any" placeholder="0-100" value="${values[i]??''}" ${terbuka(key)?'':'disabled'}>
+        </div>`;
+      }).join('');
       const update=()=>{document.getElementById('skor-komponen').textContent=hasil(key,values) ?? '— (belum lengkap)';};
       grid.querySelectorAll('input').forEach((el,i)=>el.oninput=()=>{values[i]=el.value===''?null:el.valueAsNumber; STATE.draf[key]=values;STATE.diubah.add(key);update();});
       document.getElementById('mdl-catatan').disabled=!kelompok(STATE.activePeserta).some(terbuka);
