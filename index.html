@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Penilaian Juri GTK Kapuas 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- GLOBAL LOADING OVERLAY -->
+  <div id="global-loader" class="hidden fixed inset-0 bg-slate-900/45 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white px-6 py-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3.5">
+      <div class="loader-spin"></div>
+      <span id="loader-text" class="text-sm font-semibold text-slate-700">Memproses data...</span>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <header id="app-navbar" class="hidden glass-nav border-b border-slate-200/80 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight">Dewan Juri GTK Kapuas 2026</h1>
+            <span id="nav-posisi-badge" class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+              JURI
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500">HUT ke-81 PGRI & HGN Kabupaten Kapuas</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3.5">
+        <div class="text-right hidden sm:block">
+          <div id="nav-user-name" class="text-xs font-extrabold text-slate-900"></div>
+          <div id="nav-user-rumpun" class="text-[11px] font-semibold text-blue-600"></div>
+        </div>
+        <button onclick="handleLogout()"
+          class="px-3.5 py-2 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/60 rounded-xl transition">
+          Keluar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT AREA -->
+  <div class="max-w-7xl mx-auto px-4 py-2 text-xs text-slate-600" role="status"><span id="connection-status">Memeriksa koneksi...</span> <button type="button" onclick="checkConnection()" class="underline ml-2">Cek koneksi</button></div>
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- ==================== 1. VIEW LOGIN JURI & ADMIN ==================== -->
+    <section id="view-login" class="max-w-5xl mx-auto mt-2 sm:mt-6 fade-in">
+      <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/70 border border-slate-200/80 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+
+        <!-- Left Panel: Pengantar Sistem Penilaian -->
+        <div class="lg:col-span-6 bg-gradient-to-br from-blue-800 via-blue-900 to-slate-950 text-white p-8 sm:p-10 flex flex-col justify-between">
+          <div class="space-y-5">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-[11px] font-bold tracking-wide">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              SISTEM PENILAIAN DEWAN JURI 2026
+            </div>
+
+            <div>
+              <h2 class="text-2xl sm:text-3xl font-extrabold leading-tight tracking-tight">
+                Rubrik Penilaian Seleksi GTK Kabupaten Kapuas
+              </h2>
+              <p class="text-blue-100/90 text-xs sm:text-sm mt-3 leading-relaxed">
+                Sistem penilaian terpadu bagi Dewan Juri untuk kategori <strong>Guru Berprestasi</strong>, <strong>Kepala Sekolah Berprestasi</strong>, dan <strong>GTK Berdedikasi</strong>.
+              </p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-xs border border-white/15 rounded-2xl p-4 sm:p-5 space-y-2.5 text-xs text-blue-50/95">
+              <h3 class="font-extrabold uppercase tracking-wider text-amber-300">Ketentuan Penilaian</h3>
+              <p>• <strong>Isolasi Penilaian:</strong> Setiap juri hanya dapat melihat dan mengisi nilai untuk rumpun tugasnya sendiri (bersifat rahasia antar juri).</p>
+              <p>• <strong>GTK Berprestasi (Guru & Kepsek):</strong> Penilaian meliputi <em>Naskah (30%)</em>, <em>Unjuk Karya (40%)</em>, dan <em>Wawasan Kependidikan (30%)</em>.</p>
+              <p>• <strong>GTK Berdedikasi:</strong> Penilaian meliputi <em>Video Praktik Baik (60%)</em> dan <em>Wawasan Kependidikan (40%)</em>.</p>
+              <p>• <strong>Penguncian Pleno:</strong> Nilai dapat diperbarui selama tahap masih dibuka, dan otomatis terkunci saat sidang pleno dimulai.</p>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-white/15 text-[11px] text-blue-200/80">
+            Panitia Seleksi HUT ke-81 PGRI & HGN Kab. Kapuas 2026
+          </div>
+        </div>
+
+        <!-- Right Panel: Form Login -->
+        <div class="lg:col-span-6 p-8 sm:p-10 flex flex-col justify-center bg-white">
+          <div class="mb-6">
+            <h3 class="text-xl font-extrabold text-slate-900">Masuk Dewan Juri / Panitia</h3>
+            <p class="text-xs text-slate-500 mt-1">Gunakan username dan kata sandi resmi yang dibagikan oleh panitia.</p>
+          </div>
+
+          <form onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">Username *</label>
+              <input type="text" id="login-username" required placeholder="Masukkan username Anda"
+                class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50/70 focus:bg-white focus:ring-2 focus:ring-blue-600 outline-none text-sm font-medium" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">Kata Sandi *</label>
+              <input type="password" id="login-password" required placeholder="Masukkan kata sandi"
+                class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50/70 focus:bg-white focus:ring-2 focus:ring-blue-600 outline-none text-sm" />
+            </div>
+            <button type="submit"
+              class="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/25 transition text-sm">
+              Masuk ke Lembar Penilaian &rarr;
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 2. VIEW JURI ==================== -->
+    <section id="view-juri" class="hidden space-y-6 fade-in">
+      <!-- Status Tahapan Banner -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
+        <div class="flex flex-wrap items-center gap-3">
+          <div id="badge-tahap-1" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold border">Tahap 1 (Naskah/Video): -</div>
+          <div id="badge-tahap-2" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold border">Tahap 2 (Unjuk Karya & Wawasan): -</div>
+          <div id="badge-pleno" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold border">Kunci Pleno: -</div>
+        </div>
+        <button onclick="loadDashboard()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl">
+          Muat Ulang Data
+        </button>
+      </div>
+
+      <!-- Filter Jenjang Tugas (Jika Juri mengampu SMP & SMA/SMK) + Pencarian ID Peserta -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+        <div class="md:col-span-5">
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Pilih Jenjang / Kelompok Penilaian</label>
+          <select id="juri-scope-select" onchange="renderJuriPesertaList()"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-blue-50/40 font-bold text-xs text-slate-900 focus:ring-2 focus:ring-blue-600 outline-none"></select>
+        </div>
+        <div class="md:col-span-5">
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Cari ID Peserta / No. KTA / Nama</label>
+          <input type="text" id="juri-search-input" onkeyup="renderJuriPesertaList()" placeholder="Ketik ID (mis: PST-001) atau nama..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-blue-600 outline-none text-xs" />
+        </div>
+        <div class="md:col-span-2">
+          <select id="juri-filter-done" onchange="renderJuriPesertaList()"
+            class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold">
+            <option value="ALL">Semua Peserta</option>
+            <option value="BELUM">Belum Dinilai</option>
+            <option value="SUDAH">Sudah Dinilai</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Daftar Kartu Peserta -->
+      <div id="juri-peserta-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- ==================== 3. VIEW ADMIN PANITIA ==================== -->
+    <section id="view-admin" class="hidden space-y-6 fade-in">
+      <!-- Kontrol Tahapan & Kunci Pleno -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">Kontrol Tahapan Penilaian & Kunci Pleno</h2>
+            <p class="text-xs text-slate-500">Buka/tutup akses input juri sesuai jadwal kegiatan atau kunci permanen saat sidang pleno.</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="adminRefreshRekap()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl">
+              Sinkronkan Rekap
+            </button>
+            <button onclick="exportRekapJuriCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl">
+              Ekspor CSV Rekap Nilai
+            </button>
+          </div>
+        </div>
+
+        <form onsubmit="handleSaveStageControls(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end text-xs">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Tahap 1: Naskah & Video (Pra-Kegiatan)</label>
+            <select id="ctrl-tahap-1" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold bg-slate-50">
+              <option value="BUKA">BUKA (Juri Bisa Input/Edit)</option>
+              <option value="TUTUP">TUTUP</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Tahap 2: Unjuk Karya & Wawasan</label>
+            <select id="ctrl-tahap-2" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold bg-slate-50">
+              <option value="BUKA">BUKA (Juri Bisa Input/Edit)</option>
+              <option value="TUTUP">TUTUP</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-rose-700 mb-1">Status Kunci Sidang Pleno</label>
+            <select id="ctrl-kunci-pleno" class="w-full p-2.5 border border-rose-300 rounded-xl font-bold bg-rose-50/40 text-rose-900">
+              <option value="TIDAK">TIDAK (Belum Dikunci)</option>
+              <option value="YA">YA (KUNCI SEMUA NILAI)</option>
+            </select>
+          </div>
+          <div>
+            <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl">
+              Simpan Pengaturan
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabel Rekap Gabungan Juri 1 & Juri 2 -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h3 class="text-base font-extrabold text-slate-900">Rekapitulasi Nilai Gabungan (Juri 1 & Juri 2)</h3>
+          <div class="flex flex-wrap gap-2">
+            <select id="adm-filter-sheet" onchange="renderAdminRekapTable()" class="px-3 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50">
+              <option value="">Semua Jenjang / Sheet</option>
+              <option value="NILAI_GURU_DEDIKATIF">GTK Berdedikasi</option>
+              <option value="NILAI_GURU_PAUD_SD">Guru TK/PAUD & SD/MI</option>
+              <option value="NILAI_GURU_SMP">Guru SMP/MTs</option>
+              <option value="NILAI_GURU_SMA_SMK">Guru SMA/SMK/MA</option>
+              <option value="NILAI_KEPSEK_PAUD_SD">Kepsek TK/PAUD & SD/MI</option>
+              <option value="NILAI_KEPSEK_SMP">Kepsek SMP/MTs</option>
+              <option value="NILAI_KEPSEK_SMA_SMK">Kepsek SMA/SMK/MA</option>
+            </select>
+            <input type="text" id="adm-search-peserta" onkeyup="renderAdminRekapTable()" placeholder="Cari ID / Nama..."
+              class="px-3 py-2 border border-slate-300 rounded-xl text-xs w-48" />
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                <th class="p-3">ID / Nama Peserta</th>
+                <th class="p-3">Kategori / Jenjang</th>
+                <th class="p-3 text-center">Juri 1 (Total)</th>
+                <th class="p-3 text-center">Juri 2 (Total)</th>
+                <th class="p-3 text-center">Rata Naskah/Video</th>
+                <th class="p-3 text-center">Rata Unjuk Karya</th>
+                <th class="p-3 text-center">Rata Wawasan</th>
+                <th class="p-3 text-center font-extrabold bg-blue-50 text-blue-900">Nilai Akhir</th>
+                <th class="p-3 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="adm-rekap-tbody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODAL FORM PENILAIAN RUBRIK JURI ==================== -->
+  <div id="modal-rubrik" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden fade-in">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="mdl-id-peserta" class="px-2 py-0.5 rounded bg-blue-600 text-[11px] font-extrabold">PST-001</span>
+            <h3 id="mdl-nama-peserta" class="text-base font-extrabold">Nama Peserta</h3>
+          </div>
+          <p id="mdl-sub-peserta" class="text-xs text-slate-300 mt-0.5">Kategori • Jenjang • Sekolah</p>
+        </div>
+        <button onclick="closeModal('modal-rubrik')" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <form id="form-rubrik-juri" onsubmit="handleSaveRubrikScore(event)" class="flex-1 overflow-y-auto p-6 space-y-6 text-xs">
+        <input type="hidden" id="mdl-inp-id-peserta" />
+
+        <!-- BAGIAN 1: TAHAP PRA-KEGIATAN (NASKAH BEST PRACTICE / VIDEO PRAKTIK BAIK) -->
+        <div id="sec-tahap-1" class="rounded-2xl border border-slate-200 p-5 space-y-4 bg-slate-50/40">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+            <div>
+              <h4 id="t1-heading" class="text-sm font-extrabold text-slate-900">1. Penilaian Naskah Best Practice (Bobot 30%)</h4>
+              <p id="t1-subheading" class="text-[11px] text-slate-500">Dapat dinilai lebih awal sebelum kegiatan. Rentang tiap indikator: 0 s.d. 25 poin.</p>
+            </div>
+            <div class="px-3 py-1.5 rounded-xl bg-blue-100 text-blue-900 font-extrabold">
+              Skor Komponen: <span id="live-skor-t1">0</span> / 100
+            </div>
+          </div>
+
+          <div id="t1-indicators-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+        </div>
+
+        <!-- BAGIAN 2A: UNJUK KARYA / GELAR WICARA (KHUSUS GTK PRESTASI) -->
+        <div id="sec-unjuk-karya" class="rounded-2xl border border-slate-200 p-5 space-y-4 bg-slate-50/40">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+            <div>
+              <h4 class="text-sm font-extrabold text-slate-900">2. Penilaian Unjuk Karya / Gelar Wicara & Tanya Jawab (Bobot 40%)</h4>
+              <p class="text-[11px] text-slate-500">Dinilai saat gelar wicara & tanya jawab berlangsung. Rentang tiap indikator: 0 s.d. 25 poin.</p>
+            </div>
+            <div class="px-3 py-1.5 rounded-xl bg-indigo-100 text-indigo-900 font-extrabold">
+              Skor Komponen: <span id="live-skor-uk">0</span> / 100
+            </div>
+          </div>
+
+          <div id="uk-indicators-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+        </div>
+
+        <!-- BAGIAN 2B: WAWASAN KEPENDIDIKAN / TES LISAN -->
+        <div id="sec-wawasan" class="rounded-2xl border border-slate-200 p-5 space-y-4 bg-slate-50/40">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+            <div>
+              <h4 id="wk-heading" class="text-sm font-extrabold text-slate-900">3. Penilaian Wawasan Kependidikan / Tes Lisan (Bobot 30%)</h4>
+              <p class="text-[11px] text-slate-500">Dinilai pada sesi tes lisan wawasan kependidikan. Rentang tiap indikator: 0 s.d. 25 poin.</p>
+            </div>
+            <div class="px-3 py-1.5 rounded-xl bg-teal-100 text-teal-900 font-extrabold">
+              Skor Komponen: <span id="live-skor-wk">0</span> / 100
+            </div>
+          </div>
+
+          <div id="wk-indicators-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+        </div>
+
+        <!-- Catatan Juri & Ringkasan Total -->
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-blue-50/70 border border-blue-200 rounded-2xl p-4">
+          <div class="sm:col-span-8">
+            <label class="block font-bold text-slate-700 mb-1">Catatan / Rekomendasi Juri (Opsional)</label>
+            <input type="text" id="mdl-catatan" placeholder="Tuliskan catatan singkat hasil penilaian..."
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs" />
+          </div>
+          <div class="sm:col-span-4 text-right">
+            <span class="text-[11px] font-bold text-slate-500 uppercase block">Total Nilai Akhir Juri</span>
+            <span id="live-nilai-akhir" class="text-3xl font-extrabold text-blue-700">0.00</span>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
+          <button type="button" onclick="closeModal('modal-rubrik')" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold">
+            Tutup
+          </button>
+          <button type="submit" id="btn-simpan-nilai" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20">
+            Simpan Nilai Penilaian
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
